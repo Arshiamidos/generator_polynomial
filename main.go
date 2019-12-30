@@ -12,10 +12,7 @@ func (g *GenPoly) Init(p map[int]int) {
 
 func (g *GenPoly) Sort() {
 
-	keys := []int{}
-	for k := range g.Poly {
-		keys = append(keys, k)
-	}
+	keys :=g.GetKeys()
 
 	for i:=0;i<len(keys);i++{
 		for j:=i+1;j<len(keys);j++{
@@ -45,40 +42,50 @@ func (g *GenPoly) GetKeys() []int{
 }
 
 func (g *GenPoly) GetAll() map[int]int{
+	g.Sort()
 	return g.Poly
 }
 
+func (g *GenPoly) MultiplyCoesBy(coe int){
+	keys:=g.GetKeys()
+	for i:=0;i<len(keys);i++{
+		g.Poly[keys[i]]=g.Poly[keys[i]]*coe
+	}
+} 
 
-type CoeExpo struct{
-	Coe  int;
-	Expo int;
-}
+func (g *GenPoly) SumExposBy(expo int){
+	
+	keys:=g.GetKeys()
+	p:=make(map[int]int)
+	for i:=0;i<len(keys);i++{
+		p[(keys[i]+expo)%255]=g.Poly[keys[i]]
+	}
+	g.Poly=p
+} 
+
 
 
 func main(){
 	fmt.Println("ya");
 
+	g:=GenPoly{}
+	g.Init(
+		map[int]int{
+			240:1,
+			230:7,
+			210:5,
+			300:12,
+			55:4,
+		},
+	)
 
-	CoeExpos := []CoeExpo{
-		CoeExpo{3,4},
-		CoeExpo{2,1},
-		CoeExpo{1,2},
-		CoeExpo{10,5},
-		CoeExpo{6,3},
-		CoeExpo{7,2},
-		//3x^4+ 2x^1 +2x^2
-	}
+	g.Sort()
+	fmt.Println(g.GetAll())
 
-	for i:=0;i<len(CoeExpos);i++{
-		for j:=i+1;j<len(CoeExpos);j++{
-			if CoeExpos[i].Expo > CoeExpos[j].Expo {
-				tmp:=CoeExpos[i]
-				CoeExpos[i]=CoeExpos[j]
-				CoeExpos[j]=tmp
-			}
-		}
-	}
+	g.MultiplyCoesBy(3)
+	fmt.Println(g.GetAll())
 
+	g.SumExposBy(200)
+	fmt.Println(g.GetAll())
 
-	fmt.Println(CoeExpos)
 }
