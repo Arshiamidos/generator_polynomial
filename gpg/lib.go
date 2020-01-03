@@ -2,6 +2,7 @@ package gpg
 
 import (
 	"fmt"
+	"qr/utils"
 	"sort"
 	"strconv"
 	"strings"
@@ -53,62 +54,92 @@ func (g *GenPoly) InitByAntiLog(p map[int]int) GenPoly {
 	g.Poly = p
 	return *g
 }
-func (g *GenPoly) Serialize(n int) string {
+func (g *GenPoly) Serialize(n int,v int) string {
 	s := ""
 	if n == 1 {
 		//no need to interleaving
 
 		for grp := range g.GroupBlock {
 			// g.GroupBlock[grp]
-			for _,block:= range g.GroupBlock[grp] {
-				s=s+strings.Join(block[:], "")
+			for _, block := range g.GroupBlock[grp] {
+				s = s + strings.Join(block[:], "")
 			}
 		}
 
 		for grp := range g.GroupBlockEC {
 			// g.GroupBlock[grp]
-			for _,block := range g.GroupBlockEC[grp] {
-				s=s+strings.Join(block[:], "")
+			for _, block := range g.GroupBlockEC[grp] {
+				s = s + strings.Join(block[:], "")
 			}
 		}
 	} else {
-		len1:=len(g.GroupBlock["GROUP1"])
-		len2:=len(g.GroupBlock["GROUP2"])
-		if(len1!=0){
-			len1=len(g.GroupBlock["GROUP1"][0])
+		len1 := len(g.GroupBlock["GROUP1"])
+		len2 := len(g.GroupBlock["GROUP2"])
+		if len1 != 0 {
+			len1 = len(g.GroupBlock["GROUP1"][0])
 		}
-		if(len2!=0){
-			len2=len(g.GroupBlock["GROUP2"][0])
+		if len2 != 0 {
+			len2 = len(g.GroupBlock["GROUP2"][0])
 		}
-
-		lenMax:=Max(len1,len2)
+		lenMax := Max(len1, len2)
 
 		for i := 0; i < lenMax; i++ {
-
 			for grp := range g.GroupBlock {
-				for _,block := range g.GroupBlock[grp] {
-					if  i<len(block) {
-						s=s+block[i]
+				for _, block := range g.GroupBlock[grp] {
+					if i < len(block) {
+						k, _ := strconv.ParseInt(block[i], 2, 16)
+						s = s + block[i]
+						fmt.Print(fmt.Sprintf("%02x", k))
+
 					}
 				}
+				fmt.Println()
+			}
+		}
+
+		len1 = len(g.GroupBlockEC["GROUP1"])
+		len2 = len(g.GroupBlockEC["GROUP2"])
+		if len1 != 0 {
+			len1 = len(g.GroupBlockEC["GROUP1"][0])
+		}
+		if len2 != 0 {
+			len2 = len(g.GroupBlockEC["GROUP2"][0])
+		}
+		lenMax = Max(len1, len2)
+		//s=s+"---"
+		for i := 0; i < lenMax; i++ {
+			for grp := range g.GroupBlockEC {
+				for _, block := range g.GroupBlockEC[grp] {
+					if i < len(block) {
+						k, _ := strconv.ParseInt(block[i], 2, 16)
+						s = s + block[i]
+						fmt.Print(fmt.Sprintf("%02x", k))
+						//s=s+"---"
+
+					}
+				}
+				fmt.Println()
 			}
 		}
 	}
+	if utils.ReminderBits(v)>0{
+		s=s+fmt.Sprintf("%0*x",utils.ReminderBits(v),0)
+	}
 	return s
 }
-func Max(a int,b int) int{
-	if(a>b){
+func Max(a int, b int) int {
+	if a > b {
 		return a
 	}
 	return b
 }
-func (g *GenPoly) SetGroupBlockECC(s string, BlocksInfo map[string][]int, CountECC int, Galois int) {
+func (g *GenPoly) SetGroupBlockECC(s string, BlocksInfo map[string][]int, CountECC int) {
 
 	g.GroupBlockEC = make(map[string][][]string, 2)
 	begin := 0
 
 	for Grp := range BlocksInfo {
-		//fmt.Println(Grp)
+
 		var BlocksCount = BlocksInfo[Grp][0]
 		var CodeWordCounts = BlocksInfo[Grp][1]
 
@@ -127,14 +158,13 @@ func (g *GenPoly) SetGroupBlockECC(s string, BlocksInfo map[string][]int, CountE
 				p[len(intArryas[i])-1-j] = intArryas[i][j]
 			}
 			gpg1 := New(p)
-			gpg2 := GenGalois(Galois)
+			gpg2 := GenGalois(CountECC)
 			div := gpg1.Divide(
 				gpg2,
+				CountECC,
 			)
-			//div.Sort()
 
 			eccArryas[i] = make([]string, len(div.Poly))
-
 			keysD := div.GetSortedKeys()
 			ecc := []string{}
 			for k := range keysD {
@@ -143,7 +173,6 @@ func (g *GenPoly) SetGroupBlockECC(s string, BlocksInfo map[string][]int, CountE
 			eccArryas[i] = ecc
 
 		}
-		//fmt.Println(intArryas)
 		g.GroupBlockEC[Grp] = eccArryas
 	}
 }
@@ -153,7 +182,7 @@ func (g *GenPoly) SetGroupBlock(s string, BlocksInfo map[string][]int) {
 	begin := 0
 
 	for Grp := range BlocksInfo {
-		//fmt.Println(Grp)
+
 		var BlocksCount = BlocksInfo[Grp][0]
 		var CodeWordCounts = BlocksInfo[Grp][1]
 
@@ -165,7 +194,6 @@ func (g *GenPoly) SetGroupBlock(s string, BlocksInfo map[string][]int) {
 				begin += 8
 			}
 		}
-		//fmt.Println(stringArrays)
 		g.GroupBlock[Grp] = stringArrays
 	}
 
@@ -216,7 +244,6 @@ func (g *GenPoly) SumCeosBy(ceo int) {
 	for i := 0; i < len(keys); i++ {
 		g.Poly[keys[i]] = (g.Poly[keys[i]] + ceo) % 255
 	}
-	//fmt.Println("::",g.Poly)
 }
 func (g *GenPoly) SumExposBy(expo int) {
 
@@ -257,7 +284,7 @@ func (g *GenPoly) GetSortedKeys() []int {
 	})
 	return keysG
 }
-func (gg GenPoly) Divide(ff GenPoly) GenPoly {
+func (gg GenPoly) Divide(ff GenPoly, LenFinal int) GenPoly {
 
 	f := ff
 	g := gg
@@ -275,7 +302,14 @@ func (gg GenPoly) Divide(ff GenPoly) GenPoly {
 
 		keysG = g.GetSortedKeys()
 		keysF = f.GetSortedKeys()
-
+		if g.Poly[keysG[0]] == 0 {
+			delete(g.Poly, keysG[0])
+			for len(g.Poly) < LenFinal {
+				keysG = g.GetSortedKeys()
+				g.Poly[keysG[len(keysG)-1]-1] = 0
+			}
+			break
+		}
 		f.SumCeosBy(AntiLog[g.Poly[keysG[0]]])
 		f.ToLog()
 
@@ -302,6 +336,7 @@ func (gg GenPoly) Divide(ff GenPoly) GenPoly {
 		keysF = f.GetSortedKeys()
 		keysG = g.GetSortedKeys()
 		f.SumExposBy(keysG[0] - keysF[0])
+		fmt.Println(">>>", g)
 	}
 
 	return g
