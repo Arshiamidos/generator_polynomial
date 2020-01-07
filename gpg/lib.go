@@ -62,6 +62,7 @@ func (g *GenPoly) Serialize(n int,v int) string {
 		for grp := range g.GroupBlock {
 			// g.GroupBlock[grp]
 			for _, block := range g.GroupBlock[grp] {
+				fmt.Println(block,"<>",fmt.Sprintf("%02x", block))
 				s = s + strings.Join(block[:], "")
 			}
 		}
@@ -69,6 +70,8 @@ func (g *GenPoly) Serialize(n int,v int) string {
 		for grp := range g.GroupBlockEC {
 			// g.GroupBlock[grp]
 			for _, block := range g.GroupBlockEC[grp] {
+				//k, _ := strconv.ParseInt(block[i], 2, 16)
+				fmt.Println(block,fmt.Sprintf("%02x", block))
 				s = s + strings.Join(block[:], "")
 			}
 		}
@@ -88,8 +91,8 @@ func (g *GenPoly) Serialize(n int,v int) string {
 				for _, block := range g.GroupBlock[grp] {
 					if i < len(block) {
 						k, _ := strconv.ParseInt(block[i], 2, 16)
-						s = s + block[i]
 						fmt.Print(fmt.Sprintf("%02x", k))
+						s = s + block[i]
 
 					}
 				}
